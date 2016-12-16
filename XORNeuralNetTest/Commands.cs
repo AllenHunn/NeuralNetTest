@@ -1,17 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Net;
-using System.Runtime.Serialization.Formatters;
-using System.Threading.Tasks;
 using Encog.Engine.Network.Activation;
-using Encog.MathUtil;
 using Encog.ML.Data;
 using Encog.ML.Data.Basic;
-using Encog.ML.Data.Specific;
 using Encog.ML.Train;
-using Encog.Neural;
-using Encog.Neural.Data.Basic;
 using Encog.Neural.Networks;
 using Encog.Neural.Networks.Layers;
 using Encog.Neural.Networks.Training.Propagation.Resilient;
@@ -22,6 +14,29 @@ namespace XORNeuralNetTest
 {
     public class Commands
     {
+        private static double[][] XorInput
+            => new[] {new[] {0.0, 0.0}, new[] {1.0, 0.0}, new[] {0.0, 1.0}, new[] {1.0, 1.0}};
+
+        private static double[][] XorIdeal => new[] {new[] {0.0}, new[] {1.0}, new[] {1.0}, new[] {0.0}};
+
+        private static double[][] AddInput
+            =>
+                new[]
+                {
+                    new[] {1.0, 1.0}, new[] {5.0, 10.0}, new[] {4.0, 2.0}, new[] {2.0, 2.0}, new[] {3.0, 5.0},
+                    new[] {1.0, 2.0}, new[] {5.0, 11.0}, new[] {4.0, 3.0}, new[] {2.0, 3.0}, new[] {3.0, 6.0},
+                    new[] {2.0, 2.0}, new[] {6.0, 11.0}, new[] {5.0, 3.0}, new[] {3.0, 3.0}, new[] {4.0, 6.0}
+                };
+
+        private static double[][] AddIdeal
+            =>
+                new[]
+                {
+                    new[] {2.0}, new[] {15.0}, new[] {6.0}, new[] {4.0}, new[] {8.0}, new[] {3.0}, new[] {16.0},
+                    new[] {7.0}, new[] {5.0}, new[] {9.0}, new[] {4.0}, new[] {17.0},
+                    new[] {8.0}, new[] {6.0}, new[] {10.0}
+                };
+
         [Command]
         public void Xor()
         {
@@ -34,7 +49,7 @@ namespace XORNeuralNetTest
 
             IMLDataSet trainingSet = new BasicMLDataSet(XorInput, XorIdeal);
             IMLTrain train = new ResilientPropagation(network, trainingSet);
-            int epoch = 0;
+            var epoch = 0;
             do
             {
                 epoch++;
@@ -70,10 +85,6 @@ namespace XORNeuralNetTest
             }
         }
 
-        private static double[][] XorInput => new[] { new[] { 0.0, 0.0 }, new[] { 1.0, 0.0 }, new[] { 0.0, 1.0 }, new[] { 1.0, 1.0 } };
-
-        private static double[][] XorIdeal => new[] { new[] { 0.0 }, new[] { 1.0 }, new[] { 1.0 }, new[] { 0.0 } };
-
         [Command]
         public void Add()
         {
@@ -89,17 +100,17 @@ namespace XORNeuralNetTest
             var inputMax = AddInput.SelectMany(x => x).Max();
             var idealMax = AddIdeal.SelectMany(x => x).Max();
 
-            double[][] normalizedInput = (double[][]) AddInput.Clone();
-            double[][] normalizedIdeal = (double[][]) AddIdeal.Clone();
-            double[] allNormalizedInput = normalizer.Process(normalizedInput.SelectMany(x => x).ToArray());
-            double[] allNormalizedIdeal = normalizer.Process(normalizedIdeal.SelectMany(x => x).ToArray());
+            var normalizedInput = (double[][]) AddInput.Clone();
+            var normalizedIdeal = (double[][]) AddIdeal.Clone();
+            var allNormalizedInput = normalizer.Process(normalizedInput.SelectMany(x => x).ToArray());
+            var allNormalizedIdeal = normalizer.Process(normalizedIdeal.SelectMany(x => x).ToArray());
 
-            for (int i = 0; i < normalizedInput.Length; i++)
+            for (var i = 0; i < normalizedInput.Length; i++)
             {
                 normalizedInput[i] = allNormalizedInput.Skip(i*2).Take(2).ToArray();
                 normalizedIdeal[i] = allNormalizedIdeal.Skip(i).Take(1).ToArray();
             }
-            
+
             IMLDataSet trainingSet = new BasicMLDataSet(normalizedInput, normalizedIdeal);
             IMLTrain train = new ResilientPropagation(network, trainingSet);
             var epoch = 0;
@@ -133,13 +144,9 @@ namespace XORNeuralNetTest
                 var inputOut = Console.ReadLine();
                 var expectedOutput = double.Parse(inputOut);
 
-                var output = network.Compute(new BasicMLData(new[] { double1, double2 }));
+                var output = network.Compute(new BasicMLData(new[] {double1, double2}));
                 Console.WriteLine($"Values: {double1} {double2} Expected: {expectedOutput} Actual: {output[0]}");
             }
         }
-
-        private static double[][] AddInput => new[] { new[] { 1.0, 1.0 }, new[] { 5.0, 10.0 }, new[] { 4.0, 2.0 }, new[] { 2.0, 2.0 }, new[] { 3.0, 5.0 }, new[] { 1.0, 2.0 }, new[] { 5.0, 11.0 }, new[] { 4.0, 3.0 }, new[] { 2.0, 3.0 }, new[] { 3.0, 6.0 } };
-
-        private static double[][] AddIdeal => new[] { new[] { 2.0 }, new[] { 15.0 }, new[] { 6.0 }, new[] { 4.0 }, new[] { 8.0 }, new[] { 3.0 }, new[] { 16.0 }, new[] { 7.0 }, new[] { 5.0 }, new[] { 9.0 } };
     }
 }
