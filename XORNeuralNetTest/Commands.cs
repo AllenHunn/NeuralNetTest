@@ -1,7 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Net;
+using System.Runtime.Serialization.Formatters;
 using System.Threading.Tasks;
 using Encog.Engine.Network.Activation;
+using Encog.MathUtil;
 using Encog.ML.Data;
 using Encog.ML.Data.Basic;
 using Encog.ML.Data.Specific;
@@ -11,6 +15,7 @@ using Encog.Neural.Data.Basic;
 using Encog.Neural.Networks;
 using Encog.Neural.Networks.Layers;
 using Encog.Neural.Networks.Training.Propagation.Resilient;
+using Encog.Util.Arrayutil;
 using Tectil.NCommand.Contract;
 
 namespace XORNeuralNetTest
@@ -79,9 +84,25 @@ namespace XORNeuralNetTest
             network.Structure.FinalizeStructure();
             network.Reset();
 
-            IMLDataSet trainingSet = new BasicMLDataSet(AddInput, AddIdeal);
+            var normalizer = new NormalizeArray(0, 1);
+
+            var inputMax = AddInput.SelectMany(x => x).Max();
+            var idealMax = AddIdeal.SelectMany(x => x).Max();
+
+            double[][] normalizedInput = (double[][]) AddInput.Clone();
+            double[][] normalizedIdeal = (double[][]) AddIdeal.Clone();
+            double[] allNormalizedInput = normalizer.Process(normalizedInput.SelectMany(x => x).ToArray());
+            double[] allNormalizedIdeal = normalizer.Process(normalizedIdeal.SelectMany(x => x).ToArray());
+
+            for (int i = 0; i < normalizedInput.Length; i++)
+            {
+                normalizedInput[i] = allNormalizedInput.Skip(i*2).Take(2).ToArray();
+                normalizedIdeal[i] = allNormalizedIdeal.Skip(i).Take(1).ToArray();
+            }
+            
+            IMLDataSet trainingSet = new BasicMLDataSet(normalizedInput, normalizedIdeal);
             IMLTrain train = new ResilientPropagation(network, trainingSet);
-            int epoch = 0;
+            var epoch = 0;
             do
             {
                 epoch++;
